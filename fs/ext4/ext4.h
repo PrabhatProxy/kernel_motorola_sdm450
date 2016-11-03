@@ -2567,7 +2567,8 @@ extern int ext4_search_dir(struct buffer_head *bh,
 			   struct inode *dir,
 			   struct ext4_filename *fname,
 			   unsigned int offset,
-			   struct ext4_dir_entry_2 **res_dir);
+			   struct ext4_dir_entry_2 **res_dir,
+			   int flags);
 extern int ext4_generic_delete_entry(handle_t *handle,
 				     struct inode *dir,
 				     struct ext4_dir_entry_2 *de_del,
@@ -3051,7 +3052,8 @@ extern int htree_inlinedir_to_tree(struct file *dir_file,
 extern struct buffer_head *ext4_find_inline_entry(struct inode *dir,
 					struct ext4_filename *fname,
 					struct ext4_dir_entry_2 **res_dir,
-					int *has_inline_data);
+					int *has_inline_data,
+					int flags);
 extern int ext4_delete_inline_entry(handle_t *handle,
 				    struct inode *dir,
 				    struct ext4_dir_entry_2 *de_del,
