@@ -45,6 +45,7 @@ enum pstore_type_id {
 	PSTORE_TYPE_PPC_COMMON	= 6,
 	PSTORE_TYPE_PMSG	= 7,
 	PSTORE_TYPE_PPC_OPAL	= 8,
+	PSTORE_TYPE_ANNOTATE    = 9,
 	PSTORE_TYPE_UNKNOWN	= 255
 };
 
@@ -115,6 +116,7 @@ struct pstore_info {
 extern int pstore_register(struct pstore_info *);
 extern void pstore_unregister(struct pstore_info *);
 extern bool pstore_cannot_block_path(enum kmsg_dump_reason reason);
+extern int pstore_annotate(const char *buf);
 
 struct pstore_ftrace_record {
 	unsigned long ip;

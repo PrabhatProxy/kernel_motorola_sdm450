@@ -426,6 +426,7 @@ static int pstore_decompress(void *in, void *out, size_t inlen, size_t outlen)
 		return -EIO;
 }
 
+#if 0
 static void allocate_buf_for_compression(void)
 {
 	if (zbackend) {
@@ -435,6 +436,7 @@ static void allocate_buf_for_compression(void)
 		pr_err("allocate compression buffer error!\n");
 	}
 }
+#endif
 
 static void free_buf_for_compression(void)
 {
@@ -566,6 +568,52 @@ static void pstore_unregister_kmsg(void)
 	kmsg_dump_unregister(&pstore_dumper);
 }
 
+
+/* Export function to save device specific power up
+ * data
+ *
+ */
+
+int  pstore_annotate(const char *buf)
+{
+	unsigned cnt = strlen(buf);
+	const char *end = buf + cnt;
+
+	if (!psinfo) {
+		pr_warn("device not present!\n");
+		return -ENODEV;
+	}
+
+	while (buf < end) {
+		unsigned long flags;
+		int ret;
+		u64 id;
+
+		if (cnt > psinfo->bufsize)
+			cnt = psinfo->bufsize;
+
+		if (oops_in_progress) {
+			if (!spin_trylock_irqsave(&psinfo->buf_lock, flags))
+				break;
+		} else {
+			spin_lock_irqsave(&psinfo->buf_lock, flags);
+		}
+		memcpy(psinfo->buf, buf, cnt);
+		ret = psinfo->write(PSTORE_TYPE_ANNOTATE, 0, &id, 0, 0, 0,
+			cnt, psinfo);
+		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+
+		pr_debug("ret %d wrote bytes %d\n", ret, cnt);
+		buf += cnt;
+		cnt = end - buf;
+	}
+
+	return 0;
+
+}
+EXPORT_SYMBOL_GPL(pstore_annotate);
+
+
 #ifdef CONFIG_PSTORE_CONSOLE
 static void pstore_console_write(struct console *con, const char *s, unsigned c)
 {
@@ -694,7 +742,12 @@ int pstore_register(struct pstore_info *psi)
 		return -EINVAL;
 	}
 
+	// FIX ME!
+	// Disable pstore compression/decompression for ramdom decompression fail
+	// will enable it when DDR is stable
+#if 0
 	allocate_buf_for_compression();
+#endif
 
 	if (pstore_is_mounted())
 		pstore_get_records(0);
@@ -808,8 +861,17 @@ static void decompress_record(struct pstore_record *record)
 void pstore_get_records(int quiet)
 {
 	struct pstore_info *psi = psinfo;
-	struct pstore_record	record = { .psi = psi, };
+	char			*buf = NULL;
+	ssize_t			size;
+	u64			id;
+	int			count;
+	enum pstore_type_id	type;
+	struct timespec		time;
 	int			failed = 0, rc;
+	bool			compressed;
+	int			unzipped_len = -1;
+	ssize_t			ecc_notice_size = 0;
+	int                     made_annotate_file = 0;
 
 	if (!psi)
 		return;
@@ -818,22 +880,59 @@ void pstore_get_records(int quiet)
 	if (psi->open && psi->open(psi))
 		goto out;
 
-	while ((record.size = psi->read(&record.id, &record.type,
-				 &record.count, &record.time,
-				 &record.buf, &record.compressed,
-				 &record.ecc_notice_size,
-				 record.psi)) > 0) {
+	while ((size = psi->read(&id, &type, &count, &time, &buf, &compressed,
+				 &ecc_notice_size, psi)) > 0) {
+		if (compressed && (type == PSTORE_TYPE_DMESG)) {
+			if (big_oops_buf)
+				unzipped_len = pstore_decompress(buf,
+							big_oops_buf, size,
+							big_oops_buf_sz);
 
-		decompress_record(&record);
-		rc = pstore_mkfile(&record);
-
+			if (unzipped_len > 0) {
+				if (ecc_notice_size)
+					memcpy(big_oops_buf + unzipped_len,
+					       buf + size, ecc_notice_size);
+				kfree(buf);
+				buf = big_oops_buf;
+				size = unzipped_len;
+				compressed = false;
+			} else {
+				pr_err("decompression failed;returned %d\n",
+				       unzipped_len);
+				compressed = true;
+			}
+		}
+		rc = pstore_mkfile(type, psi->name, id, count, buf,
+				   compressed, size + ecc_notice_size,
+				   time, psi);
+		if (unzipped_len < 0) {
+			/* Free buffer other than big oops */
+			kfree(buf);
+			buf = NULL;
+		} else
+			unzipped_len = -1;
 		if (rc && (rc != -EEXIST || !quiet))
 			failed++;
+		pr_info("Found record type %d, psi name %s\n", type, psi->name);
 
-		kfree(record.buf);
-		memset(&record, 0, sizeof(record));
-		record.psi = psi;
+		if (type == PSTORE_TYPE_ANNOTATE)
+			made_annotate_file = 1;
 	}
+
+	/*
+	 * If there isn't annotation file created (e.g in cold reboot
+	 * or power up), create it now, since we need app to make annotation
+	 * during bootup.
+	 */
+	if (!made_annotate_file && get_annotate_size(psi)) {
+		rc = pstore_mkfile(PSTORE_TYPE_ANNOTATE, psi->name, 0, 0, NULL,
+					0, 0, time, psi);
+		if (rc)
+			pr_err("annotate-%s  can't be created\n", psi->name);
+		else
+			pr_info("Created annotate-%s\n", psi->name);
+	}
+
 	if (psi->close)
 		psi->close(psi);
 out:
@@ -843,7 +942,6 @@ out:
 		pr_warn("failed to load %d record(s) from '%s'\n",
 			failed, psi->name);
 }
-
 static void pstore_dowork(struct work_struct *work)
 {
 	pstore_get_records(1);
