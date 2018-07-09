@@ -27,5 +27,6 @@ extern void	pstore_set_kmsg_bytes(int);
 extern void	pstore_get_records(int);
 extern int	pstore_mkfile(struct pstore_record *record);
 extern bool	pstore_is_mounted(void);
+extern size_t	get_annotate_size(struct pstore_info *psi);
 
 #endif
