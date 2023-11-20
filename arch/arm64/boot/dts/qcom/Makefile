@@ -682,6 +682,16 @@ dtb-$(CONFIG_ARCH_SDM429) += sdm429-mtp.dtb \
 	sdm429-bg-iot-wtp.dtb
 
 endif # CONFIG_MMI_DEVICE_DTBS
+
+ifeq ($(CONFIG_ALI_DTB),y)
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-evt1.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-dvt1a.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-dvt1b.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-dvt2.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-pvt1.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-pvt2.dtb
+endif
+
 endif
 
 dtb-$(CONFIG_ARCH_SDM845_VM) += sdm845-vm.dtb
