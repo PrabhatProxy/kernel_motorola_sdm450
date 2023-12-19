@@ -1648,7 +1648,7 @@ static int ps_notify_callback(struct notifier_block *self,
 	int retval;
 
 	if ((event == PSY_EVENT_PROP_CHANGED)
-		&& psy && psy->get_property && psy->desc->name &&
+		&& psy && psy->desc->get_property && psy->desc->name &&
 		!strncmp(psy->desc->name, "usb", sizeof("usb")) && data) {
 		dev = &data->client->dev;
 		dev_dbg(dev, "ps notification: event = %lu\n", event);
