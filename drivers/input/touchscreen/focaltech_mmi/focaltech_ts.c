@@ -1569,11 +1569,11 @@ static int ps_get_state(struct ft_ts_data *data,
 	retval = psy->get_property(psy, POWER_SUPPLY_PROP_PRESENT, &pval);
 
 	if (retval) {
-		dev_err(dev, "%s psy get property failed\n", psy->name);
+		dev_err(dev, "%s psy get property failed\n", psy->desc->name);
 		return retval;
 	}
 	*present = (pval.intval) ? true : false;
-	dev_dbg(dev, "%s is %s\n", psy->name,
+	dev_dbg(dev, "%s is %s\n", psy->desc->name,
 			(*present) ? "present" : "not present");
 	return 0;
 }
@@ -1648,8 +1648,8 @@ static int ps_notify_callback(struct notifier_block *self,
 	int retval;
 
 	if ((event == PSY_EVENT_PROP_ADDED || event == PSY_EVENT_PROP_CHANGED)
-		&& psy && psy->get_property && psy->name &&
-		!strncmp(psy->name, "usb", sizeof("usb")) && data) {
+		&& psy && psy->get_property && psy->desc->name &&
+		!strncmp(psy->desc->name, "usb", sizeof("usb")) && data) {
 		dev = &data->client->dev;
 		dev_dbg(dev, "ps notification: event = %lu\n", event);
 		retval = ps_get_state(data, psy, &present);
