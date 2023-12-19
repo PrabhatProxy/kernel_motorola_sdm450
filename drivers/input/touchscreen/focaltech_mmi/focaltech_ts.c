@@ -1566,7 +1566,7 @@ static int ps_get_state(struct ft_ts_data *data,
 	union power_supply_propval pval = {0};
 	int retval;
 
-	retval = psy->get_property(psy, POWER_SUPPLY_PROP_PRESENT, &pval);
+	retval = power_supply_get_property(psy, POWER_SUPPLY_PROP_PRESENT, &pval);
 
 	if (retval) {
 		dev_err(dev, "%s psy get property failed\n", psy->desc->name);
