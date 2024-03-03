@@ -40,6 +40,8 @@ Module.symvers
 *.su
 *.c.[012]*.*
 
+out/
+out/*
 #
 # Top-level generic files
 #
