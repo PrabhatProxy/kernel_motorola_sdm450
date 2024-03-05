@@ -7,6 +7,11 @@ endif
 # to be runtime added by the bootloader (i.e. /chosen properties)
 DTC_FLAGS += -p 1024
 
+dtbo-$(CONFIG_ARCH_SDM450) += sdm450-ali-evt-overlay.dtbo
+
+sdm450-ali-evt-overlay.dtbo-base := \
+	sdm450-ali-base.dtb
+
 else
 dtb-$(CONFIG_ARCH_QCOM)	+= apq8016-sbc.dtb msm8916-mtp.dtb
 dtb-$(CONFIG_ARCH_QCOM)	+= msm8996-mtp.dtb
@@ -645,6 +650,16 @@ dtb-$(CONFIG_ARCH_SDM450) += sdm450-rcm.dtb \
 	sdm450-pmi632-mtp-s3.dtb \
 	sda450-pmi632-cdp-s2.dtb \
 	sda450-pmi632-mtp-s3.dtb
+
+ifeq ($(CONFIG_ALI_DTB),y)
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-p0a.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-evt2.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-dvt1a.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-dvt1b.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-dvt2.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-pvt1.dtb
+dtb-$(CONFIG_ARCH_SDM450) += sdm450-ali-pvt2.dtb
+endif
 
 dtb-$(CONFIG_ARCH_SDM632) += sdm632-rumi.dtb \
 	sdm632-cdp-s2.dtb \
